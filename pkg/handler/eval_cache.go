@@ -39,6 +39,14 @@ type EvalCache struct {
 	// lastSnapshotMaxID > 0 indicates at least one successful load has occurred.
 	lastSnapshotMaxID uint
 }
+// ExportQuery is the query parameters for filtering eval cache export
+type ExportQuery struct {
+	IDs     []string
+	Keys    []string
+	Enabled *bool
+	Tags    []string
+	TagsOp  string // "ANY" or "ALL"; defaults to "ANY"
+}
 
 // GetEvalCache gets the EvalCache
 var GetEvalCache = func() *EvalCache {
@@ -148,6 +156,98 @@ func (ec *EvalCache) GetByFlagKeyOrID(keyOrID any) *entity.Flag {
 		f = ec.cache.keyCache[s]
 	}
 	return f
+}
+// Query filters flags in the eval cache by the given query parameters.
+func (ec *EvalCache) Query(q ExportQuery) []*entity.Flag {
+	ec.cacheMutex.RLock()
+	defer ec.cacheMutex.RUnlock()
+
+	var flags []*entity.Flag
+
+	// Phase 1: select by ids and/or keys
+	if len(q.IDs) > 0 || len(q.Keys) > 0 {
+		seen := make(map[uint]bool)
+		for _, idStr := range q.IDs {
+			if f, ok := ec.cache.idCache[idStr]; ok && !seen[f.ID] {
+				flags = append(flags, f)
+				seen[f.ID] = true
+			}
+		}
+		for _, key := range q.Keys {
+			if f, ok := ec.cache.keyCache[key]; ok && !seen[f.ID] {
+				flags = append(flags, f)
+				seen[f.ID] = true
+			}
+		}
+	} else {
+		flags = make([]*entity.Flag, 0, len(ec.cache.idCache))
+		for _, f := range ec.cache.idCache {
+			flags = append(flags, f)
+		}
+	}
+
+	// Phase 2: filter by enabled
+	if q.Enabled != nil {
+		filtered := make([]*entity.Flag, 0, len(flags))
+		for _, f := range flags {
+			if f.Enabled == *q.Enabled {
+				filtered = append(filtered, f)
+			}
+		}
+		flags = filtered
+	}
+
+	// Phase 3: filter by tags
+	if len(q.Tags) > 0 {
+		var filtered []*entity.Flag
+		if q.TagsOp == "ALL" {
+			for _, f := range flags {
+				tagSet := make(map[string]bool, len(f.Tags))
+				for _, t := range f.Tags {
+					tagSet[t.Value] = true
+				}
+				hasAll := true
+				for _, tag := range q.Tags {
+					if !tagSet[tag] {
+						hasAll = false
+						break
+					}
+				}
+				if hasAll {
+					filtered = append(filtered, f)
+				}
+			}
+		} else {
+			// ANY: flag must have at least one matching tag
+			if len(q.Tags) == 1 {
+				tag := q.Tags[0]
+				for _, f := range flags {
+					for _, t := range f.Tags {
+						if t.Value == tag {
+							filtered = append(filtered, f)
+							break
+						}
+					}
+				}
+			} else {
+				tagSet := make(map[string]bool, len(q.Tags))
+				for _, t := range q.Tags {
+					tagSet[t] = true
+				}
+				for _, f := range flags {
+					for _, t := range f.Tags {
+						if tagSet[t.Value] {
+							filtered = append(filtered, f)
+							break
+						}
+					}
+				}
+			}
+		}
+		flags = filtered
+	}
+
+	return flags
 }
 
 // getSnapshotMaxID queries the latest flag_snapshot id. Returns 0 on error.

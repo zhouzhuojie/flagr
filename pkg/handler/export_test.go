@@ -157,4 +157,113 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{})
 		assert.IsType(t, res.(*export.GetExportEvalCacheJSONOK), res)
 	})
+
+	t.Run("query by id", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Ids: strPtr("100"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+		assert.Equal(t, "flag_key_100", payload.Flags[0].Key)
+	})
+
+	t.Run("query by id no match", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Ids: strPtr("999"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 0)
+	})
+
+	t.Run("query by key", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Keys: strPtr("flag_key_100"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+		assert.Equal(t, uint(100), payload.Flags[0].ID)
+	})
+
+	t.Run("query by enabled true", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Enabled: boolPtr(true),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+		assert.True(t, payload.Flags[0].Enabled)
+	})
+
+	t.Run("query by enabled false", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Enabled: boolPtr(false),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 0)
+	})
+
+	t.Run("query by tags ANY", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Tags: strPtr("tag1"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+	})
+
+	t.Run("query by tags no match", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Tags: strPtr("nonexistent"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 0)
+	})
+
+	t.Run("query by tags ALL match", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Tags: strPtr("tag1,tag2"),
+			All:  boolPtr(true),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+	})
+
+	t.Run("query by tags ALL no match", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Tags: strPtr("tag1,tag3"),
+			All:  boolPtr(true),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 0)
+	})
+
+	t.Run("query by enabled and tags", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Enabled: boolPtr(true),
+			Tags:    strPtr("tag1"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		assert.Len(t, payload.Flags, 1)
+	})
 }
+
+func strPtr(s string) *string { return &s }
+func boolPtr(b bool) *bool    { return &b }

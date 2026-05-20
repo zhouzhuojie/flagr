@@ -5,6 +5,27 @@ get:
   description: Export JSON format of the eval cache dump
   produces:
     - application/json
+  parameters:
+    - in: query
+      name: ids
+      type: string
+      description: return flags with the given ids (comma separated)
+    - in: query
+      name: keys
+      type: string
+      description: return flags with the given keys (comma separated)
+    - in: query
+      name: enabled
+      type: boolean
+      description: return flags having given enabled status
+    - in: query
+      name: tags
+      type: string
+      description: return flags with the given tags (comma separated)
+    - in: query
+      name: all
+      type: boolean
+      description: use ALL or ANY semantics over provided tags (ANY by default)
   responses:
     200:
       description: OK

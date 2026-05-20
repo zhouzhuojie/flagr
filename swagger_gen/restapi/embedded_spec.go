@@ -111,6 +111,38 @@ func init() {
           "export"
         ],
         "operationId": "getExportEvalCacheJSON",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "return flags with the given ids (comma separated)",
+            "name": "ids",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "return flags with the given keys (comma separated)",
+            "name": "keys",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "return flags having given enabled status",
+            "name": "enabled",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "return flags with the given tags (comma separated)",
+            "name": "tags",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "use ALL or ANY semantics over provided tags (ANY by default)",
+            "name": "all",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -2210,6 +2242,38 @@ func init() {
           "export"
         ],
         "operationId": "getExportEvalCacheJSON",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "return flags with the given ids (comma separated)",
+            "name": "ids",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "return flags with the given keys (comma separated)",
+            "name": "keys",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "return flags having given enabled status",
+            "name": "enabled",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "return flags with the given tags (comma separated)",
+            "name": "tags",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "use ALL or ANY semantics over provided tags (ANY by default)",
+            "name": "all",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",

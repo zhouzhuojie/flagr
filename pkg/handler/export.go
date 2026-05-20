@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/openflagr/flagr/pkg/entity"
@@ -100,8 +101,32 @@ var exportFlagEntityTypes = func(tmpDB *gorm.DB) error {
 	return nil
 }
 
-var exportEvalCacheJSONHandler = func(export.GetExportEvalCacheJSONParams) middleware.Responder {
+var exportEvalCacheJSONHandler = func(p export.GetExportEvalCacheJSONParams) middleware.Responder {
+	q := ExportQuery{}
+
+	if p.Ids != nil && *p.Ids != "" {
+		q.IDs = strings.Split(*p.Ids, ",")
+	}
+	if p.Keys != nil && *p.Keys != "" {
+		q.Keys = strings.Split(*p.Keys, ",")
+	}
+	if p.Enabled != nil {
+		q.Enabled = p.Enabled
+	}
+	if p.Tags != nil && *p.Tags != "" {
+		q.Tags = strings.Split(*p.Tags, ",")
+	}
+	if p.All != nil && *p.All {
+		q.TagsOp = "ALL"
+	}
+
+	flags := GetEvalCache().Query(q)
+	// Copy to value type for JSON serialization
+	valFlags := make([]entity.Flag, len(flags))
+	for i, f := range flags {
+		valFlags[i] = *f
+	}
 	return export.NewGetExportEvalCacheJSONOK().WithPayload(
-		GetEvalCache().export(),
+		EvalCacheJSON{Flags: valFlags},
 	)
 }
