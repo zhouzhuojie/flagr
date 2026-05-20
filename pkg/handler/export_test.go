@@ -160,7 +160,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by id", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Ids: strPtr("100"),
+			Ids: new("100"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -171,7 +171,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by id no match", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Ids: strPtr("999"),
+			Ids: new("999"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -181,7 +181,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by key", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Keys: strPtr("flag_key_100"),
+			Keys: new("flag_key_100"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -192,7 +192,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by enabled true", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Enabled: boolPtr(true),
+			Enabled: new(true),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -203,7 +203,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by enabled false", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Enabled: boolPtr(false),
+			Enabled: new(false),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -213,7 +213,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by tags ANY", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Tags: strPtr("tag1"),
+			Tags: new("tag1"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -223,7 +223,7 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by tags no match", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Tags: strPtr("nonexistent"),
+			Tags: new("nonexistent"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -233,8 +233,8 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by tags ALL match", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Tags: strPtr("tag1,tag2"),
-			All:  boolPtr(true),
+			Tags: new("tag1,tag2"),
+			All:  new(true),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -244,8 +244,8 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by tags ALL no match", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Tags: strPtr("tag1,tag3"),
-			All:  boolPtr(true),
+			Tags: new("tag1,tag3"),
+			All:  new(true),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -255,8 +255,8 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 	t.Run("query by enabled and tags", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Enabled: boolPtr(true),
-			Tags:    strPtr("tag1"),
+			Enabled: new(true),
+			Tags:    new("tag1"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
@@ -265,8 +265,6 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 	})
 }
 
-func strPtr(s string) *string { return &s }
-func boolPtr(b bool) *bool    { return &b }
 func TestEvalCacheQuery_UnionIDsAndKeys(t *testing.T) {
 	f1 := entity.GenFixtureFlag()
 	f2 := f1
@@ -300,7 +298,7 @@ func TestEvalCacheQuery_UnionIDsAndKeys(t *testing.T) {
 
 	t.Run("enabled false with matching tags", func(t *testing.T) {
 		flags := ec.Query(ExportQuery{
-			Enabled: boolPtr(false),
+			Enabled: new(false),
 			Tags:    []string{"tag3"},
 		})
 		assert.Len(t, flags, 1)
@@ -326,7 +324,7 @@ func TestEvalCacheQuery_UnionIDsAndKeys(t *testing.T) {
 
 	t.Run("response body structure", func(t *testing.T) {
 		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
-			Ids: strPtr("100"),
+			Ids: new("100"),
 		})
 		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
 		assert.True(t, ok2)
