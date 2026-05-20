@@ -19,18 +19,6 @@ type EvalCacheJSON struct {
 	Flags []entity.Flag
 }
 
-func (ec *EvalCache) export() EvalCacheJSON {
-	ec.cacheMutex.RLock()
-	defer ec.cacheMutex.RUnlock()
-
-	idCache := ec.cache.idCache
-	fs := make([]entity.Flag, 0, len(idCache))
-	for _, f := range idCache {
-		ff := *f
-		fs = append(fs, ff)
-	}
-	return EvalCacheJSON{Flags: fs}
-}
 
 func (ec *EvalCache) fetchAllFlags() (idCache map[string]*entity.Flag, keyCache map[string]*entity.Flag, tagCache map[string]map[uint]*entity.Flag, err error) {
 	fs, err := fetchAllFlags()
