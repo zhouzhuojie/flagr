@@ -267,3 +267,77 @@ func TestExportEvalCacheJSONHandler(t *testing.T) {
 
 func strPtr(s string) *string { return &s }
 func boolPtr(b bool) *bool    { return &b }
+func TestEvalCacheQuery_UnionIDsAndKeys(t *testing.T) {
+	f1 := entity.GenFixtureFlag()
+	f2 := f1
+	f2.ID = 101
+	f2.Key = "flag_key_101"
+	f2.Enabled = false
+	f2.Tags = []entity.Tag{{Value: "tag3"}}
+	f2.PrepareEvaluation()
+
+	db := entity.NewTestDB()
+	db.Create(&f1)
+	db.Create(&f2)
+	tmpDB, dbErr := db.DB()
+	if dbErr != nil {
+		t.Errorf("Failed to get database")
+	}
+	defer tmpDB.Close()
+	defer gostub.StubFunc(&getDB, db).Reset()
+
+	ec := GetEvalCache()
+	ec.lastSnapshotMaxID = 0
+	ec.reloadMapCache()
+
+	t.Run("ids + keys union", func(t *testing.T) {
+		flags := ec.Query(ExportQuery{
+			IDs:  []string{"100"},
+			Keys: []string{"flag_key_101"},
+		})
+		assert.Len(t, flags, 2)
+	})
+
+	t.Run("enabled false with matching tags", func(t *testing.T) {
+		flags := ec.Query(ExportQuery{
+			Enabled: boolPtr(false),
+			Tags:    []string{"tag3"},
+		})
+		assert.Len(t, flags, 1)
+		assert.Equal(t, "flag_key_101", flags[0].Key)
+	})
+
+	t.Run("tags ANY partial match", func(t *testing.T) {
+		flags := ec.Query(ExportQuery{
+			Tags: []string{"tag1", "nonexistent"},
+		})
+		assert.Len(t, flags, 1)
+		assert.Equal(t, "flag_key_100", flags[0].Key)
+	})
+
+	t.Run("tags ALL single tag match", func(t *testing.T) {
+		flags := ec.Query(ExportQuery{
+			Tags:   []string{"tag1"},
+			TagsOp: TagOpAll,
+		})
+		assert.Len(t, flags, 1)
+		assert.Equal(t, "flag_key_100", flags[0].Key)
+	})
+
+	t.Run("response body structure", func(t *testing.T) {
+		res := exportEvalCacheJSONHandler(export.GetExportEvalCacheJSONParams{
+			Ids: strPtr("100"),
+		})
+		ok, ok2 := res.(*export.GetExportEvalCacheJSONOK)
+		assert.True(t, ok2)
+		payload := ok.Payload.(EvalCacheJSON)
+		if !assert.Len(t, payload.Flags, 1) {
+			return
+		}
+		f := payload.Flags[0]
+		assert.Equal(t, uint(100), f.ID)
+		assert.Equal(t, "flag_key_100", f.Key)
+		assert.True(t, f.Enabled)
+		assert.NotEmpty(t, f.Tags)
+	})
+}

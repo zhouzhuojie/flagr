@@ -105,23 +105,25 @@ var exportEvalCacheJSONHandler = func(p export.GetExportEvalCacheJSONParams) mid
 	q := ExportQuery{}
 
 	if p.Ids != nil && *p.Ids != "" {
-		q.IDs = strings.Split(*p.Ids, ",")
+		q.IDs = splitCSV(*p.Ids)
 	}
 	if p.Keys != nil && *p.Keys != "" {
-		q.Keys = strings.Split(*p.Keys, ",")
+		q.Keys = splitCSV(*p.Keys)
 	}
 	if p.Enabled != nil {
 		q.Enabled = p.Enabled
 	}
 	if p.Tags != nil && *p.Tags != "" {
-		q.Tags = strings.Split(*p.Tags, ",")
+		q.Tags = splitCSV(*p.Tags)
 	}
 	if p.All != nil && *p.All {
-		q.TagsOp = "ALL"
+		q.TagsOp = TagOpAll
 	}
 
 	flags := GetEvalCache().Query(q)
-	// Copy to value type for JSON serialization
+	// Copy from pointers to value types for the response payload.
+	// Safe: Tags, Segments, Variants slices still share backing arrays
+	// with the cache, but this is a read-only export — no mutation occurs.
 	valFlags := make([]entity.Flag, len(flags))
 	for i, f := range flags {
 		valFlags[i] = *f
@@ -129,4 +131,16 @@ var exportEvalCacheJSONHandler = func(p export.GetExportEvalCacheJSONParams) mid
 	return export.NewGetExportEvalCacheJSONOK().WithPayload(
 		EvalCacheJSON{Flags: valFlags},
 	)
+}
+
+// splitCSV splits a comma-separated string and trims whitespace from each element.
+func splitCSV(s string) []string {
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

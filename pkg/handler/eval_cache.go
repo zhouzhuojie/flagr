@@ -47,6 +47,12 @@ type ExportQuery struct {
 	Tags    []string
 	TagsOp  string // "ANY" or "ALL"; defaults to "ANY"
 }
+const (
+	// TagOpAny returns flags matching any of the given tags (default).
+	TagOpAny = "ANY"
+	// TagOpAll returns flags matching all of the given tags.
+	TagOpAll = "ALL"
+)
 
 // GetEvalCache gets the EvalCache
 var GetEvalCache = func() *EvalCache {
@@ -200,15 +206,20 @@ func (ec *EvalCache) Query(q ExportQuery) []*entity.Flag {
 	// Phase 3: filter by tags
 	if len(q.Tags) > 0 {
 		var filtered []*entity.Flag
-		if q.TagsOp == "ALL" {
+		if q.TagsOp == TagOpAll {
+			// For ALL, check every query tag exists on the flag.
+			// No per-flag map allocation — just linear scan f.Tags per query tag.
 			for _, f := range flags {
-				tagSet := make(map[string]bool, len(f.Tags))
-				for _, t := range f.Tags {
-					tagSet[t.Value] = true
-				}
 				hasAll := true
 				for _, tag := range q.Tags {
-					if !tagSet[tag] {
+					found := false
+					for _, t := range f.Tags {
+						if t.Value == tag {
+							found = true
+							break
+						}
+					}
+					if !found {
 						hasAll = false
 						break
 					}
@@ -219,27 +230,15 @@ func (ec *EvalCache) Query(q ExportQuery) []*entity.Flag {
 			}
 		} else {
 			// ANY: flag must have at least one matching tag
-			if len(q.Tags) == 1 {
-				tag := q.Tags[0]
-				for _, f := range flags {
-					for _, t := range f.Tags {
-						if t.Value == tag {
-							filtered = append(filtered, f)
-							break
-						}
-					}
-				}
-			} else {
-				tagSet := make(map[string]bool, len(q.Tags))
-				for _, t := range q.Tags {
-					tagSet[t] = true
-				}
-				for _, f := range flags {
-					for _, t := range f.Tags {
-						if tagSet[t.Value] {
-							filtered = append(filtered, f)
-							break
-						}
+			queryTagSet := make(map[string]bool, len(q.Tags))
+			for _, tag := range q.Tags {
+				queryTagSet[tag] = true
+			}
+			for _, f := range flags {
+				for _, t := range f.Tags {
+					if queryTagSet[t.Value] {
+						filtered = append(filtered, f)
+						break
 					}
 				}
 			}
